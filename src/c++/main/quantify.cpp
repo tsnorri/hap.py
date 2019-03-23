@@ -124,6 +124,8 @@ int main(int argc, char* argv[]) {
                 ("location,l", po::value<std::string>(), "Start location.")
                 ("regions,R", po::value< std::vector<std::string> >(),
                     "Region bed file. You can attach a label by prefixing with a colon, e.g. -R FP2:false-positives-type2.bed")
+                ("regions-list-file", po::value<std::string>(),
+                    "As an alternative to --regions, the regions may be given in a text file, one region per line.")
                 ("roc-regions", po::value< std::vector<std::string> >(),
                     "Regions to compute ROCs in. By default, only the '*' region (total unstratified counts) will produce ROC counts. "
                     "For example, --roc-regions '*' --roc-regions FP2 also produces a ROC in the FP2 regions.")
@@ -295,6 +297,15 @@ int main(int argc, char* argv[]) {
             if (vm.count("regions"))
             {
                 rnames = vm["regions"].as< std::vector<std::string> >();
+            }
+
+            if (vm.count("regions-list-file"))
+            {
+                std::string const &fname(vm["regions-list-file"].as< std::string >());
+                std::string line;
+                std::ifstream infile(fname);
+                while (std::getline(infile, line))
+                    roc_regions.push_back(line);
             }
 
             if (vm.count("roc-regions"))

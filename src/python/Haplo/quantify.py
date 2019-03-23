@@ -21,6 +21,7 @@ import json
 import logging
 import Tools
 import pipes
+import platform
 
 from Tools.bcftools import runBcftools
 
@@ -59,6 +60,24 @@ def _locations_tmp_bed_file(locations):
     tf.close()
 
     return tf.name
+
+
+def _region_arguments():
+    # According to Python’s documentation, tempfile.NamedTemporaryFile
+    # cannot be opened by other processes on Windows NT. Hence, try to
+    # pass the regions as command line arguments. Otherwise, write the
+    # regions to a temporary file and pass its name.
+    # https://docs.python.org/3.5/library/tempfile.html#tempfile.NamedTemporaryFile
+    retval = ""
+    if "Windows" == platform.system():
+        for k, v in regions.iteritems():
+            retval += " -R '%s:%s'" % (k, v)
+    else:
+        f = tempfile.NamedTemporaryFile()
+        for k, v in regions.iteritems():
+            f.write("%s:%s" % (k, v))
+        retval += " --regions-list-file %s" % f.name
+    return retval
 
 
 def run_quantify(filename,
@@ -152,8 +171,7 @@ def run_quantify(filename,
         run_str += " -v %s" % pipes.quote(write_vcf)
 
     if regions:
-        for k, v in regions.iteritems():
-            run_str += " -R '%s:%s'" % (k, v)
+        run_str += _region_arguments(regions)
 
     if roc_regions:
         for r in roc_regions:
